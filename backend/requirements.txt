@@ -6,6 +6,7 @@ uvicorn==0.30.0           # the server that runs FastAPI
 
 # Database
 sqlalchemy==2.0.35        # ORM — lets you write Python instead of SQL
+greenlet==3.3.2           # required by SQLAlchemy async session internals
 alembic==1.13.2           # database migrations (tracks schema changes like git)
 asyncpg==0.29.0           # async PostgreSQL driver (fast!)
 psycopg2-binary==2.9.9    # sync PostgreSQL driver
