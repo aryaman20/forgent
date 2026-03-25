@@ -1,0 +1,51 @@
+# requirements.txt — every library your backend needs
+
+# Web framework
+fastapi==0.115.0          # the API framework (like Express for Python)
+uvicorn==0.30.0           # the server that runs FastAPI
+
+# Database
+sqlalchemy==2.0.35        # ORM — lets you write Python instead of SQL
+alembic==1.13.2           # database migrations (tracks schema changes like git)
+asyncpg==0.29.0           # async PostgreSQL driver (fast!)
+psycopg2-binary==2.9.9    # sync PostgreSQL driver
+
+# Auth
+PyJWT==2.8.0              # JWT token validation (for Clerk)
+httpx==0.27.0             # async HTTP client
+
+# AI / LLM
+langchain==0.3.0          # LLM framework
+langchain-openai==0.2.0   # OpenAI integration
+langchain-anthropic==0.2.0 # Claude integration
+langchain-google-genai==2.0.0 # Gemini integration
+langgraph==0.2.76         # agent orchestration (state machines for AI)
+langsmith==0.1.130        # LLM tracing + observability
+litellm==1.48.0           # unified API for all LLM providers
+
+# RAG + Vector DB
+langchain-qdrant==0.1.4   # Qdrant integration for LangChain
+qdrant-client==1.11.0     # Qdrant Python client
+cohere==5.11.0            # for re-ranking search results
+
+# Document processing
+pypdf==4.3.1              # PDF parsing
+python-docx==1.1.2        # Word doc parsing
+python-multipart==0.0.9   # file upload handling
+
+# Background tasks
+celery==5.4.0             # task queue (for async doc processing)
+redis==5.0.8              # Redis client (Celery broker)
+
+# Caching
+langchain-community==0.3.0 # extra LangChain tools
+
+# Env + config
+pydantic-settings==2.5.2  # type-safe config from .env
+python-dotenv==1.0.1      # loads .env file
+
+# Utilities
+structlog==24.4.0         # structured logging
+stripe==10.12.0           # billing
+boto3==1.35.0             # AWS S3 file storage
+ragas==0.2.0              # RAG evaluation framework
