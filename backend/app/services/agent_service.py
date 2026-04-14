@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID
 
 import structlog
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.graph import build_agent_graph
 from app.models.agent import Agent
 from app.models.user import Organization
+from app.rag.qdrant_manager import qdrant_manager
 from app.schemas.agent import AgentCreateRequest, AgentUpdateRequest
 
 logger = structlog.get_logger()
@@ -113,12 +115,21 @@ class AgentService:
         await db.flush()
 
     def get_agent_graph(self, agent: Agent):
+        collection_name = None
+        if agent.has_knowledge_base:
+            collection_name = asyncio.run(
+                qdrant_manager.get_collection_name(str(agent.org_id), str(agent.id))
+            )
+
         return build_agent_graph(
             provider=agent.model_provider,
             model_name=agent.model_name,
             temperature=agent.temperature,
             system_prompt=agent.system_prompt,
             tools_config=agent.tools_config or [],
+            collection_name=collection_name,
+            use_rag=agent.has_knowledge_base,
+            retrieval_config=agent.retrieval_config,
         )
 
 
