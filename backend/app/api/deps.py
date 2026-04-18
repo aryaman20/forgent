@@ -1,3 +1,6 @@
+import re
+import uuid
+
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
@@ -5,10 +8,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import verify_clerk_token
-from app.models.user import Organization, User
+from app.models.user import Organization, User, UserRole
 
 # Extracts Bearer token from Authorization header.
 bearer_scheme = HTTPBearer()
+
+
+def _slugify(value: str) -> str:
+	base = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+	if not base:
+		base = "forgent-user"
+	return base[:80]
 
 
 async def get_current_user(
@@ -33,10 +43,37 @@ async def get_current_user(
 	user = result.scalar_one_or_none()
 
 	if not user:
-		raise HTTPException(
-			status_code=404,
-			detail="User not found. Please complete onboarding.",
-		)
+		email = payload.get("email") or payload.get("email_address")
+		if not email:
+			email = f"{clerk_id}@clerk.local"
+
+		name = payload.get("name") or payload.get("full_name") or (email.split("@")[0] if email else "User")
+
+		existing_by_email_result = await db.execute(select(User).where(User.email == email))
+		existing_by_email = existing_by_email_result.scalar_one_or_none()
+
+		if existing_by_email:
+			existing_by_email.clerk_id = clerk_id
+			user = existing_by_email
+		else:
+			org_slug = f"{_slugify(name)}-{str(uuid.uuid4())[:8]}"
+			org = Organization(
+				name=f"{name}'s Workspace",
+				slug=org_slug,
+			)
+			db.add(org)
+			await db.flush()
+
+			user = User(
+				clerk_id=clerk_id,
+				email=email,
+				name=name,
+				role=UserRole.OWNER,
+				is_active=True,
+				org_id=org.id,
+			)
+			db.add(user)
+			await db.flush()
 
 	if not user.is_active:
 		raise HTTPException(status_code=403, detail="Account disabled")

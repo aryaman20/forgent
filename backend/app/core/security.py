@@ -1,10 +1,37 @@
+import base64
+
 import httpx
 from fastapi import HTTPException, status
 
 from app.core.config import settings
 
-# Clerk's public key endpoint -- used to verify JWT signatures.
-CLERK_JWKS_URL = "https://api.clerk.dev/v1/jwks"
+def _build_clerk_jwks_urls() -> list[str]:
+	"""Build candidate Clerk JWKS URLs from configured publishable key."""
+	urls: list[str] = []
+	publishable_key = (settings.CLERK_PUBLISHABLE_KEY or "").strip()
+
+	if publishable_key.startswith("pk_"):
+		parts = publishable_key.split("_", 2)
+		if len(parts) == 3 and parts[2]:
+			encoded = parts[2]
+			encoded += "=" * (-len(encoded) % 4)
+			try:
+				decoded = base64.b64decode(encoded).decode("utf-8").rstrip("$")
+				if decoded:
+					urls.append(f"https://{decoded}/.well-known/jwks.json")
+			except Exception:
+				pass
+
+	# Fallbacks for older Clerk setups.
+	urls.append("https://api.clerk.com/v1/jwks")
+	urls.append("https://api.clerk.dev/v1/jwks")
+
+	# Keep order but remove duplicates.
+	unique_urls: list[str] = []
+	for url in urls:
+		if url not in unique_urls:
+			unique_urls.append(url)
+	return unique_urls
 
 
 async def verify_clerk_token(token: str) -> dict:
@@ -17,10 +44,25 @@ async def verify_clerk_token(token: str) -> dict:
 		import jwt
 
 		# Fetch Clerk's public keys used to verify token signature.
+		jwks = None
+		last_error: Exception | None = None
 		async with httpx.AsyncClient(timeout=10.0) as client:
-			response = await client.get(CLERK_JWKS_URL)
-			response.raise_for_status()
-			jwks = response.json()
+			for jwks_url in _build_clerk_jwks_urls():
+				try:
+					response = await client.get(jwks_url)
+					response.raise_for_status()
+					data = response.json()
+					if isinstance(data, dict) and isinstance(data.get("keys"), list):
+						jwks = data
+						break
+				except Exception as exc:
+					last_error = exc
+
+		if not jwks:
+			raise HTTPException(
+				status_code=status.HTTP_401_UNAUTHORIZED,
+				detail="Token verification failed",
+			) from last_error
 
 		# Get the key from JWKS that matches this token's kid header.
 		headers = jwt.get_unverified_header(token)
