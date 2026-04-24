@@ -50,3 +50,7 @@ structlog==24.4.0         # structured logging
 stripe==10.12.0           # billing
 boto3==1.35.0             # AWS S3 file storage
 ragas==0.2.0              # RAG evaluation framework
+
+# Testing
+pytest==8.4.2
+pytest-asyncio==1.1.0

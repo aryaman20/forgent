@@ -15,6 +15,7 @@ from app.rag.qdrant_manager import qdrant_manager
 from app.rag.retriever import RetrievalConfig
 from app.schemas.chat import StreamChunk
 from app.services.agent_service import agent_service
+from app.services.analytics_service import analytics_service
 from app.services.conversation_service import conversation_service
 
 logger = structlog.get_logger()
@@ -126,6 +127,18 @@ class ChatService:
                 latency_ms=latency_ms,
                 sources=sources,
                 model_used=f"{agent.model_provider}/{agent.model_name}",
+            )
+
+            await analytics_service.log_event(
+                db=db,
+                org_id=org_id,
+                agent_id=agent_id,
+                event_type="chat_message",
+                model=agent.model_name,
+                tokens_input=tokens_input,
+                tokens_output=tokens_output,
+                latency_ms=latency_ms,
+                metadata={"conversation_id": str(conversation.id)},
             )
 
             if sources:

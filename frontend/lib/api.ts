@@ -32,10 +32,17 @@ axiosInstance.interceptors.request.use(async (config) => {
 	const token = await (window as ClerkWindow).Clerk?.session?.getToken?.();
 
 	if (token) {
-		config.headers = {
-			...(config.headers || {}),
-			Authorization: `Bearer ${token}`,
-		};
+		if (config.headers && typeof (config.headers as { set?: unknown }).set === "function") {
+			(config.headers as { set: (name: string, value: string) => void }).set(
+				"Authorization",
+				`Bearer ${token}`,
+			);
+		} else {
+			config.headers = {
+				...(config.headers || {}),
+				Authorization: `Bearer ${token}`,
+			} as typeof config.headers;
+		}
 	}
 
 	return config;

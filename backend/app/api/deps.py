@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import verify_clerk_token
 from app.models.user import Organization, User, UserRole
+from app.services.analytics_service import analytics_service
 
 # Extracts Bearer token from Authorization header.
 bearer_scheme = HTTPBearer()
@@ -98,6 +99,26 @@ async def get_current_org(
 		raise HTTPException(status_code=404, detail="Organization not found")
 
 	return org
+
+
+async def check_message_limit(
+	current_org: Organization = Depends(get_current_org),
+	db: AsyncSession = Depends(get_db),
+) -> None:
+	limits = {
+		"free": 100,
+		"pro": 10000,
+		"team": 100000,
+	}
+
+	count = await analytics_service.get_today_message_count(db, current_org.id)
+	limit = limits.get((current_org.plan or "free").lower(), limits["free"])
+
+	if count >= limit:
+		raise HTTPException(
+			status_code=429,
+			detail=f"Daily message limit reached ({limit} messages). Upgrade your plan.",
+		)
 
 
 async def get_current_context(

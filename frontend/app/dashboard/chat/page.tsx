@@ -402,7 +402,7 @@ export default function ChatDashboardPage() {
 
       <div className="fixed right-4 top-4 z-20 rounded-full border border-zinc-700 bg-zinc-900/90 p-1">
         {isSignedIn ? (
-          <UserButton afterSignOutUrl="/" />
+          <UserButton />
         ) : (
           <SignInButton mode="modal">
             <button

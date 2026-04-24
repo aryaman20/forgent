@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_current_org, get_current_user
+from app.api.deps import check_message_limit, get_current_org, get_current_user
 from app.core.database import get_db
 from app.models.conversation import Conversation
 from app.models.user import Organization, User
@@ -25,6 +25,7 @@ async def stream_chat(
 	db: AsyncSession = Depends(get_db),
 	current_user: User = Depends(get_current_user),
 	current_org: Organization = Depends(get_current_org),
+	_: None = Depends(check_message_limit),
 ) -> StreamingResponse:
 	"""Stream assistant response token-by-token as Server-Sent Events."""
 	generator = chat_service.stream_chat(

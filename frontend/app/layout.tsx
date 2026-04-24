@@ -26,15 +26,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  const clerkJsUrl =
-    process.env.NEXT_PUBLIC_CLERK_JS_URL ||
-    "https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6/dist/clerk.browser.js";
 
   return (
     <ClerkProvider
       appearance={{ baseTheme: dark }}
       publishableKey={publishableKey}
-      clerkJSUrl={clerkJsUrl}
     >
       <html
         lang="en"
